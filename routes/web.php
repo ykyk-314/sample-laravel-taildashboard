@@ -18,7 +18,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
+Route::get('/home', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -28,4 +28,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+Route::prefix('admin')->as('admin.')->group(function () {
+    Route::get('/', fn () => view('admin.index'))->name('index');
+
+    Route::get('login', fn () => view('admin.login'))->name('login');
+
+    Route::get('ui-elements', fn () => view('admin.ui-elements'))->name('ui-elements');
+
+    Route::get('tables', fn () => view('admin.tables'))->name('tables');
+
+    Route::get('forms', fn () => view('admin.forms'))->name('forms');
+
+});
+
+require __DIR__ . '/auth.php';
