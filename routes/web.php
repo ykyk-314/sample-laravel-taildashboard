@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::prefix('admin')->as('admin.')->group(function () {
+    // Layouts
     Route::get('/', fn () => view('admin.index'))->name('index');
 
     Route::get('login', fn () => view('admin.login'))->name('login');
@@ -39,6 +41,8 @@ Route::prefix('admin')->as('admin.')->group(function () {
 
     Route::get('forms', fn () => view('admin.forms'))->name('forms');
 
+    // Samples
+    Route::resource('users', UserController::class);
 });
 
 require __DIR__ . '/auth.php';
