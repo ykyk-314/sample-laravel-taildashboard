@@ -1,0 +1,88 @@
+# [SAMPLE] Laravel CI Workflow
+name: CI
+
+on:
+  # push:
+  #   branches:
+  #     - feature/**
+  pull_request:
+    branches:
+      - main
+      - develop
+    # types: [closed]
+    paths:
+      - 'app/**'
+      - 'tests/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_USER: 'aiuser'
+          MYSQL_PASSWORD: 'aipass'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    strategy:
+      matrix:
+        php: [8.2]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: cache vendor
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: ./vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
+          tools: composer:v2
+
+      - name: Composer Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: NPM Install & Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Prepare Laravel Application
+        run: |
+          cp .env.ci .env
+          php artisan key:generate
+          php artisan config:clear
+
+      # - name: Lint
+      #   run: composer lint
+
+      - name: Static
+        run: ./vendor/bin/phpstan analyse --memory-limit=2G
+
+      - name: Test
+        run: ./vendor/bin/phpunit
